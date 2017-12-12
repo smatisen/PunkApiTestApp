@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Punk Api Test App</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="shr_product_category">Best Gifts for Teen Girls</string>
+    <string name="shr_product_description">
+        Choose fun, exciting, and unique gifts every girl will love.
+    </string>
+    <string name="favs">Favorites</string>
+    <string name="home">Home</string>
+    <string name="title_activity_detail">DetailActivity</string>
+    <string name="action_sort">Sort</string>
+
+    <string-array name="sortArray">
+        <item>Ignore all</item>
+        <item>EBU</item>
+        <item>ABV</item>
+        <item>EBC</item>
+    </string-array>
+
+</resources>
