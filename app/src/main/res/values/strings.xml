@@ -12,10 +12,16 @@
     <string name="action_sort">Sort</string>
 
     <string-array name="sortArray">
-        <item>Ignore all</item>
-        <item>EBU</item>
+        <item>Ignore all (by Name)</item>
+        <item>IBU</item>
         <item>ABV</item>
         <item>EBC</item>
+    </string-array>
+
+    <string-array name="orderArray">
+        <item>Ascending order</item>
+        <item>Descending order</item>
+
     </string-array>
 
 </resources>

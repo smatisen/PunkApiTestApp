@@ -23,6 +23,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
@@ -75,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     @SuppressLint("StaticFieldLeak")
     private class LoadTask extends AsyncTask<Void, Void, List<BeerItem>> {
 
@@ -85,8 +88,12 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(List<BeerItem> beerItems) {
-            mBeerAdapter.setBeerItems(beerItems);
-            mBeerAdapter.notifyDataSetChanged();
+
+            mBeerAdapter = new BeerAdapter(mContext, beerItems, imageRequester);
+       //     mBeerAdapter.setBeerItems(beerItems);
+      //      mBeerAdapter.notifyDataSetChanged();
+            mRecyclerView.setAdapter(mBeerAdapter);
+
             if (mProgressBar.getVisibility() == View.VISIBLE) {
                 showProgress(false);
             }
@@ -122,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView mRecyclerView;
     ProgressBar mProgressBar;
     CoordinatorLayout mCoordinatorLayout;
+    ImageRequester imageRequester;
 
     private GcmNetworkManager mGcmNetworkManager;
 
@@ -134,14 +142,38 @@ public class MainActivity extends AppCompatActivity {
 
         mContext = getApplicationContext();
         mProgressBar = findViewById(R.id.progressBar);
-        page = CodelabUtil.getIntPreference(CodelabUtil.PAGE, mContext);
+        page = CodelabUtil.getIntPreference(CodelabUtil.PAGE, mContext, 1);
 
         Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(myToolbar);
 
-        ImageRequester imageRequester = ImageRequester.getInstance(this);
+        BottomNavigationView bottomNavigation =
+                (BottomNavigationView) findViewById(R.id.bottom_navigation);
 
-        mBeerAdapter = new BeerAdapter(mContext, new ArrayList<BeerItem>(), imageRequester);
+        bottomNavigation.setOnNavigationItemSelectedListener(
+                new BottomNavigationView.OnNavigationItemSelectedListener() {
+                    @Override
+                    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+
+                        int newValue;
+                        if(item.getItemId() == R.id.favorites){
+                            newValue = 1;
+
+                        } else {
+                            newValue = 0;
+                                                    }
+                        CodelabUtil.saveIntPreference(CodelabUtil.FAV, newValue, mContext);
+
+                      reloadrecyclerView();
+
+                       return true;
+                    }
+                });
+
+
+        imageRequester = ImageRequester.getInstance(this);
+
+
         mGcmNetworkManager = GcmNetworkManager.getInstance(this);
 
         mCoordinatorLayout = findViewById(R.id.mainContent);
@@ -149,9 +181,15 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView.setHasFixedSize(true);
         mRecyclerView.setLayoutManager(
                 new GridLayoutManager(this, getResources().getInteger(R.integer.shr_column_count)));
-        mRecyclerView.setAdapter(mBeerAdapter);
 
         initBroadcastReceiver();
+
+    }
+
+    private void reloadrecyclerView() {
+
+        mLoadTask = new LoadTask();
+        mLoadTask.execute();
 
     }
 
@@ -277,7 +315,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void savePage(int i) {
         page = i;
-        CodelabUtil.saveIntPreference(i, mContext);
+        CodelabUtil.saveIntPreference(CodelabUtil.PAGE, i, mContext);
     }
 
 
@@ -355,20 +393,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     int newFilter;
+    int newOrder;
     private AlertDialog alert;
+
     private void showSortOrderSetDialog() {
 
         LayoutInflater inflater1 = getLayoutInflater();
-        ViewGroup parent = (ViewGroup) findViewById(R.id.recyclerView);
+        ViewGroup parent = findViewById(R.id.recyclerView);
         final View dialogView1 = inflater1.inflate(R.layout.filter_menu, parent, false);
 
+        newFilter = CodelabUtil.getIntPreference(CodelabUtil.FILTER, mContext);
+        newOrder = CodelabUtil.getIntPreference(CodelabUtil.ORDER, mContext);
 
         String[] mTestArray = getResources().getStringArray(R.array.sortArray);
 
-        Spinner spinner = (Spinner) dialogView1.findViewById(R.id.spinner);
+        Spinner spinner = dialogView1.findViewById(R.id.spinner);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner, mTestArray);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
+        spinner.setSelection(newFilter);
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -384,6 +427,25 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        String[] mTestArray1 = getResources().getStringArray(R.array.orderArray);
+        Spinner spinner1 = (Spinner) dialogView1.findViewById(R.id.spinner1);
+        ArrayAdapter<String> adapter1 = new ArrayAdapter<>(this, R.layout.spinner, mTestArray1);
+        adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner1.setAdapter(adapter1);
+        spinner1.setSelection(newOrder);
+
+        spinner1.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long l) {
+                newOrder = position;
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+                newOrder = 0;
+            }
+        });
+
 
         final AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
         String dialogTitle = "Set Sort Order";
@@ -392,16 +454,10 @@ public class MainActivity extends AppCompatActivity {
                 .setPositiveButton(dialog_positive_button, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-/*
-                        if (a.equals(SET_GUEST_FILTER_AND_SAVE)) {
-                            saveIntPreference("guestsFilter", newFilter);
-                            saveIntPreference("guestsSidesOption", newSidesOption);
-                            saveIntPreference("guestsAgeOption", newAge);
-                            filterGuests();
-                        } else {
-                            filterGuestsAndSend(newFilter, newSidesOption, newAge);
-                        }*/
 
+                        CodelabUtil.saveIntPreference(CodelabUtil.FILTER, newFilter, mContext);
+                        CodelabUtil.saveIntPreference(CodelabUtil.ORDER, newOrder, mContext);
+                        reloadrecyclerView();
 
                     }
                 })

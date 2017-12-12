@@ -15,7 +15,6 @@ package test.punk.com.punkapitestapp;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.util.SortedList;
 import android.support.v7.widget.RecyclerView;
@@ -44,7 +43,6 @@ public class BeerAdapter extends RecyclerView.Adapter<BeerAdapter.ViewHolder> {
 
     }
 
-
     public class ViewHolder extends RecyclerView.ViewHolder {
         private final TextView mLabelTextView;
         private final NetworkImageView imageView;
@@ -66,6 +64,7 @@ public class BeerAdapter extends RecyclerView.Adapter<BeerAdapter.ViewHolder> {
             public void onClick(View view) {
                 BeerItem beer = (BeerItem) view.getTag(R.id.tag_product_entry);
                 updateBeerItemStatus(beer.getId());
+
                 Log.d("XXXXX", "onClick: " + beer.isFavorite());
 
             }
@@ -124,16 +123,14 @@ public class BeerAdapter extends RecyclerView.Adapter<BeerAdapter.ViewHolder> {
                 notifyItemMoved(fromPosition, toPosition);
             }
 
-
             @Override
             public void onChanged(int position, int count) {
                 notifyItemRangeChanged(position, count);
             }
 
-
             @Override
             public boolean areContentsTheSame(BeerItem oldItem, BeerItem newItem) {
-                return oldItem.getId().equals(oldItem.getId());
+                return oldItem.getId().equals(newItem.getId());
             }
 
             @Override
@@ -143,14 +140,56 @@ public class BeerAdapter extends RecyclerView.Adapter<BeerAdapter.ViewHolder> {
 
             @Override
             public int compare(BeerItem o1, BeerItem o2) {
-                return (o1.getName()).compareToIgnoreCase(o2.getName());
+                return compareItems(o1, o2);
             }
         });
 
-        for(BeerItem item: beerItems){
-            mList.add(item);
+        int favFilter = CodelabUtil.getIntPreference(CodelabUtil.FAV, mContext);
+        for (BeerItem item : beerItems) {
+
+            if (favFilter == 0) {
+                mList.add(item);
+            } else {
+                if (item.isFavorite()) {
+                    mList.add(item);
+                }
+            }
+
         }
 
+    }
+
+    private int compareItems(BeerItem o1, BeerItem o2) {
+
+        int filter = CodelabUtil.getIntPreference(CodelabUtil.FILTER, mContext);
+        int order = CodelabUtil.getIntPreference(CodelabUtil.ORDER, mContext);
+        int out = 0;
+
+        switch (filter) {
+            case 0:
+                out = order == 0 ?
+                        (o1.getName()).compareToIgnoreCase(o2.getName()) :
+                        (o2.getName()).compareToIgnoreCase(o1.getName());
+                break;
+            case 1:
+                out = order == 0 ?
+                        Double.compare(o1.getIbu(), o2.getIbu()) :
+                        Double.compare(o2.getIbu(), o1.getIbu());
+                break;
+            case 2:
+                out = order == 0 ?
+                        Double.compare(o1.getAbv(), o2.getAbv()) :
+                        Double.compare(o2.getAbv(), o1.getAbv());
+                break;
+            case 3:
+                out = order == 0 ?
+                        Double.compare(o1.getEbc(), o2.getEbc()) :
+                        Double.compare(o2.getEbc(), o1.getEbc());
+                break;
+        }
+
+
+        return out;
     }
 
     @Override
@@ -195,7 +234,18 @@ public class BeerAdapter extends RecyclerView.Adapter<BeerAdapter.ViewHolder> {
             if (beerItem.getId().equals(id)) {
 
                 beerItem.setFavorite(!beerItem.isFavorite());
-                notifyItemChanged(i);
+                CodelabUtil.saveBeerItemToFile(mContext, beerItem);
+
+                int favFlag = CodelabUtil.getIntPreference(CodelabUtil.FAV, mContext);
+
+                if (favFlag == 0) {
+                    notifyItemChanged(i);
+                } else {
+                    mList.removeItemAt(i);
+
+                }
+
+
                 break;
             }
         }

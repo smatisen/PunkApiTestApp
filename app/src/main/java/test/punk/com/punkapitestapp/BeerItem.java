@@ -14,6 +14,7 @@ public class BeerItem implements Serializable {
     }
 
 
+
     public BeerItem(String id, String name, String image_url, double abv, double ibu, double ebc, boolean isFavorite) {
         this.id = id;
         this.name = name;

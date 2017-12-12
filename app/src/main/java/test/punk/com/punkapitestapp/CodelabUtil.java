@@ -52,26 +52,34 @@ public class CodelabUtil {
     public static final String ONEOFF_TASK = "Oneoff Task";
     public static final String NOW_TASK = "Now Task";
 
-    public static final String PAGE = "page";
-    public static final String BEER = "beer";
+    static final String PAGE = "page";
+    static final String BEER = "beer";
+    static final String FILTER = "filter";
+    static final String ORDER = "order";
+    static final String FAV = "fav";
+
 
 
     /**
     * Some utils
     */
 
-    static void saveIntPreference(int value, Context mContext) {
+    static void saveIntPreference(String key, int value, Context mContext) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         SharedPreferences.Editor editor = preferences.edit();
-        editor.putInt("page", value);
+        editor.putInt(key, value);
         editor.apply();
     }
 
-    public static int getIntPreference(String key, Context mContext) {
+    static int getIntPreference(String key, Context mContext) {
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(mContext);
-        return pref.getInt(key, 1);
+        return pref.getInt(key, 0);
     }
 
+    static int getIntPreference(String key, Context mContext, int def) {
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(mContext);
+        return pref.getInt(key, def);
+    }
 
     /**
      * Make a network request form ONLINE_LOCATION.
@@ -89,33 +97,7 @@ public class CodelabUtil {
         }
     }
 
-    public static List<TaskItem> taskItemsFromString(String taskStr) {
-        Gson gson = new Gson();
-        Type taskItemType = new TypeToken<ArrayList<TaskItem>>(){}.getType();
-        List<TaskItem> taskItems = gson.fromJson(taskStr, taskItemType);
-        return taskItems;
-    }
-
-    private static String taskItemsToString(List<TaskItem> taskItems) {
-        return new Gson().toJson(taskItems);
-    }
-
-    public static List<TaskItem> getTaskItemsFromFile(Context context) {
-        List<TaskItem> taskItems = new ArrayList<>();
-        File taskFile = new File(context.getFilesDir(), FILE_NAME);
-        if (!taskFile.exists()) {
-            return taskItems;
-        }
-        try {
-            String taskStr = IOUtils.toString(new FileInputStream(taskFile));
-            taskItems.addAll(taskItemsFromString(taskStr));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return taskItems;
-    }
-
-    public static List<BeerItem> getBeerItemsFromFile(Context context) {
+   public static List<BeerItem> getBeerItemsFromFile(Context context) {
         List<BeerItem> beerItems = new ArrayList<>();
         File beerFile = new File(context.getFilesDir(), FILE_NAME);
         if (!beerFile.exists()) {
@@ -138,40 +120,7 @@ public class CodelabUtil {
     }
 
 
-    public static TaskItem getTaskItemFromFile(Context context, String id) {
-        List<TaskItem> taskItems = getTaskItemsFromFile(context);
-        for (int i = 0; i < taskItems.size(); i++) {
-            TaskItem taskItem = taskItems.get(i);
-            if (taskItem.getId().equals(id)) {
-                return taskItem;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Overwrite Tasks in file with those given here.
-     */
-    private static void saveTaskItemsToFile(Context context, List<TaskItem> taskItems) {
-        String taskStr = taskItemsToString(taskItems);
-        File file = new File(context.getFilesDir(), FILE_NAME);
-        if (!file.exists()) {
-            try {
-                file.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
-        }
-        try {
-            FileOutputStream fileOutputStream = new FileOutputStream(file);
-            IOUtils.write(taskStr, fileOutputStream);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void saveBeerItemsToFile(Context context, List<BeerItem> beerItems) {
+      public static void saveBeerItemsToFile(Context context, List<BeerItem> beerItems) {
         String beerStr = beerItemsToString(beerItems);
         File file = new File(context.getFilesDir(), FILE_NAME);
         if (!file.exists()) {
@@ -195,21 +144,6 @@ public class CodelabUtil {
     }
 
 
-    public static void saveTaskItemToFile(Context context, TaskItem taskItem) {
-        List<TaskItem> taskItems = getTaskItemsFromFile(context);
-        for (int i = 0; i < taskItems.size(); i++) {
-            TaskItem ti = taskItems.get(i);
-            if (ti.getId().equals(taskItem.getId())) {
-                taskItems.set(i, taskItem);
-                break;
-            }
-        }
-        saveTaskItemsToFile(context, taskItems);
-    }
-
-    /**
-     * Add a Task to the front of the task list.
-       */
 
     public static void addBeerItemsToFile(Context context, List<BeerItem> newItems) {
 
@@ -218,6 +152,21 @@ public class CodelabUtil {
         }
 
     }
+
+
+    public static void saveBeerItemToFile(Context context, BeerItem beerItem) {
+        List<BeerItem> beerItems = getBeerItemsFromFile(context);
+        for (int i = 0; i < beerItems.size(); i++) {
+            BeerItem ti = beerItems.get(i);
+            if (ti.getId().equals(beerItem.getId())) {
+                beerItems.set(i, beerItem);
+                break;
+            }
+        }
+        saveBeerItemsToFile(context, beerItems);
+    }
+
+
 
     public static void addBeerItemToFile(Context context, BeerItem beerItem) {
         List<BeerItem> beerItems = getBeerItemsFromFile(context);
@@ -240,21 +189,4 @@ public class CodelabUtil {
     }
 
 
-    public static void addTaskItemToFile(Context context, TaskItem taskItem) {
-        List<TaskItem> taskItems = getTaskItemsFromFile(context);
-        taskItems.add(0, taskItem);
-        saveTaskItemsToFile(context, taskItems);
-    }
-
-    public static void deleteTaskItemFromFile(Context context, TaskItem taskItem) {
-        List<TaskItem> taskItems = getTaskItemsFromFile(context);
-        for (int i = 0; i < taskItems.size(); i++) {
-            TaskItem ti = taskItems.get(i);
-            if (ti.getId().equals(taskItem.getId())) {
-                taskItems.remove(i);
-                break;
-            }
-        }
-        saveTaskItemsToFile(context, taskItems);
-    }
 }
